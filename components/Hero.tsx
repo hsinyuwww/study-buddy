@@ -236,23 +236,12 @@ const Hero: FC<THeroProps> = ({
           </div>
         )}
 
-        {/* Value prop + open source */}
-        <div className="mt-2 max-w-xl space-y-3 text-center text-xs text-ink-quiet" style={{ lineHeight: 1.7 }}>
+        {/* Value prop */}
+        <div className="mt-2 max-w-xl text-center text-xs text-ink-quiet" style={{ lineHeight: 1.7 }}>
           <p>
             Most AI tutoring tools require accounts, hand over your data, and
             charge a subscription. Study Buddy runs on your computer. Your
             questions never leave your machine.
-          </p>
-          <p>
-            Fully open source.{" "}
-            <a
-              href="https://github.com/michael-borck/study-buddy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-ink-muted underline transition-colors duration-normal hover:text-accent"
-            >
-              Star it on GitHub.
-            </a>
           </p>
         </div>
       </div>

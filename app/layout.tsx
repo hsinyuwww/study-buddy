@@ -6,7 +6,7 @@ import InitializeSettings from "./initialize-settings";
 const figtree = Figtree({ subsets: ["latin"] });
 
 let title = "Study Buddy – AI Personal Tutor";
-let description = "Learn faster with our open source AI personal tutor";
+let description = "Learn faster with an AI personal tutor that runs on your computer";
 let url = "https://studybuddy.com/";
 let ogimage = "https://studybuddy.com/og-image.png";
 let sitename = "studybuddy.com";

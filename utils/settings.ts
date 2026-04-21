@@ -35,7 +35,11 @@ export function getSettings(): AppSettings {
   console.log('No runtime settings, using environment variables');
   
   // Fallback to environment variables
-  const provider = process.env.LLM_PROVIDER || DEFAULT_SETTINGS.llmProvider;
+  // Back-compat: earlier versions used AI_PROVIDER
+  const provider =
+    process.env.LLM_PROVIDER ||
+    process.env.AI_PROVIDER ||
+    DEFAULT_SETTINGS.llmProvider;
   
   const settings = {
     llmProvider: provider,

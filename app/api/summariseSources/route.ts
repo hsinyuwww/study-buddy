@@ -2,6 +2,8 @@ import { createProvider, LLMStreamPayload } from "@/utils/providers";
 import { getSettings } from "@/utils/settings";
 
 export const maxDuration = 60;
+const SUMMARY_TIMEOUT_MS = 25000;
+const MAX_SOURCES_TO_SUMMARISE = 4;
 
 async function collectStreamText(stream: ReadableStream): Promise<string> {
   const reader = stream.getReader();
@@ -49,47 +51,67 @@ export async function POST(request: Request) {
   const settings = getSettings();
   const provider = createProvider();
 
-  const summaries = await Promise.all(
-    sources.map(async (source: { name: string; url: string; fullContent: string }) => {
-      if (
-        !source.fullContent ||
-        source.fullContent === "not available" ||
-        source.fullContent === "Nothing found"
-      ) {
-        return source;
-      }
+  const summaries: { name: string; url: string; fullContent: string }[] = [];
 
-      try {
-        const payload: LLMStreamPayload = {
-          model: settings.llmModel,
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a helpful assistant. Summarise the following web page content in 200–300 words, keeping the key facts, concepts, and any definitions. Return only the summary, no preamble.",
-            },
-            {
-              role: "user",
-              content: source.fullContent.substring(0, 15000),
-            },
-          ],
-          stream: true,
-          temperature: 0.3,
-        };
+  let sourceIndex = 0;
+  for (const source of sources as {
+    name: string;
+    url: string;
+    fullContent: string;
+  }[]) {
+    sourceIndex += 1;
+    if (
+      !source.fullContent ||
+      source.fullContent === "not available" ||
+      source.fullContent === "Nothing found"
+    ) {
+      summaries.push(source);
+      continue;
+    }
 
-        const stream = await provider.stream(payload);
-        const summary = await collectStreamText(stream);
+    if (sourceIndex > MAX_SOURCES_TO_SUMMARISE) {
+      summaries.push(source);
+      continue;
+    }
 
-        return {
-          ...source,
-          fullContent: summary || source.fullContent,
-        };
-      } catch (e) {
-        console.error(`Error summarising ${source.name}:`, e);
-        return source;
-      }
-    }),
-  );
+    try {
+      const payload: LLMStreamPayload = {
+        model: settings.llmModel,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a helpful assistant. Summarise the following web page content in 200-300 words, keeping the key facts, concepts, and any definitions. Return only the summary, no preamble.",
+          },
+          {
+            role: "user",
+            content: source.fullContent.substring(0, 15000),
+          },
+        ],
+        stream: true,
+        temperature: 0.3,
+      };
+
+      const stream = await provider.stream(payload);
+      const summary = await Promise.race<string>([
+        collectStreamText(stream),
+        new Promise<string>((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`Summary timeout after ${SUMMARY_TIMEOUT_MS}ms`)),
+            SUMMARY_TIMEOUT_MS,
+          ),
+        ),
+      ]);
+
+      summaries.push({
+        ...source,
+        fullContent: summary || source.fullContent,
+      });
+    } catch (e) {
+      console.error(`Error summarising ${source.name}:`, e);
+      summaries.push(source);
+    }
+  }
 
   return Response.json(summaries);
 }

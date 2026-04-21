@@ -180,23 +180,15 @@ export default function AboutPage() {
               </p>
             </div>
 
-            {/* Open source */}
+            {/* Licence */}
             <div className="flex items-center mb-6">
               <span className="inline-block h-px w-9 bg-accent mr-3"></span>
-              <span className="text-xs font-medium uppercase tracking-widest text-ink-muted">Open source</span>
+              <span className="text-xs font-medium uppercase tracking-widest text-ink-muted">Licence</span>
             </div>
             <p className="mb-4 text-ink-muted">
-              Study Buddy is fully open source under the MIT Licence.
+              This project is released under the MIT Licence. Third-party libraries and notices are listed on the legal page.
             </p>
             <div className="flex flex-wrap gap-4">
-              <a
-                href="https://github.com/michael-borck/study-buddy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-soft bg-ink px-6 py-3 font-medium text-paper transition-colors duration-normal hover:bg-accent"
-              >
-                Star on GitHub
-              </a>
               <a
                 href="/legal"
                 className="rounded-soft border border-hairline px-6 py-3 text-ink transition-colors duration-normal hover:border-hairline-strong hover:text-accent"

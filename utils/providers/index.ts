@@ -69,7 +69,7 @@ export function createProvider(config?: ProviderConfig): LLMProvider {
 
 export function getDefaultProviderConfig(): ProviderConfig {
   // Default to Ollama for local development
-  const provider = process.env.LLM_PROVIDER || "ollama";
+  const provider = process.env.LLM_PROVIDER || process.env.AI_PROVIDER || "ollama";
   
   switch (provider.toLowerCase()) {
     case "ollama":

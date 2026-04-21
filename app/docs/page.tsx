@@ -345,8 +345,8 @@ Click "Save and apply" to save your changes. Settings take effect immediately �
 
 ## Getting help
 
-- **GitHub Issues** — Report bugs at github.com/michael-borck/study-buddy/issues
-- **Discussions** — Ask questions at github.com/michael-borck/study-buddy/discussions
+- Use this in-app documentation and the Legal page for third-party notices.
+- If you maintain your own copy of the project, track issues and questions in your own workflow (for example your repository or team channel).
     `
   },
 
@@ -413,7 +413,7 @@ User submits a topic. The /api/getSources endpoint queries the configured search
 The /api/getParsedSources endpoint fetches each URL, extracts readable text using Mozilla Readability, and cleans it.
 
 ### 3. Auto-summarise (conditional)
-If total content exceeds 20,000 characters, the /api/summariseSources endpoint sends each source through the LLM with a "summarise in 200-300 words" prompt. Sources are summarised in parallel.
+If total content exceeds your configured context budget, the /api/summariseSources endpoint sends sources through the LLM with a "summarise in 200-300 words" prompt, with limits so preparation stays responsive.
 
 ### 4. System prompt construction
 The getSystemPrompt function in utils/utils.ts builds the system message from:
@@ -513,7 +513,7 @@ All API endpoints accept an X-StudyBuddy-Settings header containing JSON-encoded
 ## Quick start
 
 # Clone and install
-git clone https://github.com/michael-borck/study-buddy.git
+git clone <your-repository-url>
 cd study-buddy
 npm install
 
@@ -551,15 +551,11 @@ You can configure defaults via environment variables, but most users will use th
 - Tailwind CSS utility-first
 - Studio Calm design tokens (see app/globals.css)
 
-## Contributing
+## Working on the codebase
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run npm run build to verify
-5. Open a pull request
-
-See the GitHub repository for full contribution guidelines.
+1. Create a feature branch for your change.
+2. Run \`npm run lint\` and \`npm run build\` before you ship or package.
+3. Keep API routes and provider code aligned with the Settings page and environment variable defaults documented above.
     `
   },
 };

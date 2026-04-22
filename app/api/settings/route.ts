@@ -1,33 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSettings, updateSettings, AppSettings } from "@/utils/settings";
 
-// Import file settings helper (only works in Node.js environment)
-let fileSettings: any = null;
-try {
-  fileSettings = require("@/utils/file-settings");
-  console.log("✅ File settings module loaded successfully");
-} catch (e: any) {
-  console.log("❌ File settings not available (probably in browser):", e.message);
-}
-
 export async function GET() {
   try {
-    // Try to load from file first if available
-    let settings = getSettings();
-    
-    if (fileSettings) {
-      console.log('🔍 Checking for file-stored settings...');
-      const fileStoredSettings = fileSettings.loadSettingsFromFile();
-      if (fileStoredSettings) {
-        console.log('📂 Loaded settings from file, applying to runtime');
-        updateSettings(fileStoredSettings);
-        settings = getSettings();
-      } else {
-        console.log('📂 No file-stored settings found');
-      }
-    } else {
-      console.log('📂 File settings not available');
-    }
+    const settings = getSettings();
     
     console.log('GET settings called, returning:', { 
       provider: settings.llmProvider, 
@@ -51,6 +27,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const newSettings: AppSettings = await request.json();
+    
     console.log('POST settings called with:', { 
       provider: newSettings.llmProvider, 
       baseUrl: newSettings.llmBaseUrl,
@@ -58,22 +35,16 @@ export async function POST(request: Request) {
       hasApiKey: !!newSettings.llmApiKey
     });
     
-    // Update runtime settings
-    updateSettings(newSettings);
-    
-    // Also save to file for persistence across app restarts
-    if (fileSettings) {
-      console.log('💾 Attempting to save settings to file...');
-      const success = fileSettings.saveSettingsToFile(newSettings);
-      if (success) {
-        console.log('✅ Settings also saved to persistent file');
-      } else {
-        console.warn('❌ Failed to save settings to file, localStorage only');
-      }
+    // Only update runtime settings if a real API key is provided
+    // Prevents blank UI submissions from wiping env var values
+    if (newSettings.llmApiKey && newSettings.llmApiKey !== "***") {
+      updateSettings(newSettings);
+      console.log('✅ Runtime settings updated from UI');
     } else {
-      console.log('💾 File settings not available, using localStorage only');
+      console.log('⚠️ Skipping runtime update — no real API key provided, keeping env vars');
     }
-    
+
+    // Skip file saving entirely — Vercel has a read-only filesystem
     return NextResponse.json({ success: true, message: "Settings updated successfully" });
   } catch (error) {
     console.error("Error updating settings:", error);

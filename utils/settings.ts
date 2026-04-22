@@ -82,7 +82,7 @@ function getProviderApiKey(provider: string): string {
 function getProviderBaseUrl(provider: string): string {
   switch (provider.toLowerCase()) {
     case "ollama": return process.env.OLLAMA_BASE_URL || DEFAULT_SETTINGS.llmBaseUrl;
-    case "openai": return process.env.OPENAI_BASE_URL || "https://api.openai.com";
+    case "openai": return process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
     case "anthropic":
     case "claude": return process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com";
     case "google":

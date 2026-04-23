@@ -130,13 +130,39 @@ export async function POST(request: Request) {
 
     const rawJSON = await response.json();
 
+    if (!response.ok) {
+      const msg =
+        typeof rawJSON === "object" && rawJSON !== null && "message" in rawJSON
+          ? String((rawJSON as { message: unknown }).message)
+          : response.statusText;
+      console.error("Serper search failed:", response.status, msg);
+      return NextResponse.json(
+        { error: `Serper search failed: ${msg || response.statusText}` },
+        { status: 502 },
+      );
+    }
+
     const SerperJSONSchema = z.object({
-      organic: z.array(z.object({ title: z.string(), link: z.string() })),
+      organic: z
+        .array(z.object({ title: z.string(), link: z.string() }))
+        .optional(),
     });
 
-    const data = SerperJSONSchema.parse(rawJSON);
+    const parsed = SerperJSONSchema.safeParse(rawJSON);
+    if (!parsed.success) {
+      console.error("Serper response shape error:", rawJSON);
+      return NextResponse.json(
+        { error: "Serper returned an unexpected response" },
+        { status: 502 },
+      );
+    }
 
-    let results = data.organic.map((result) => ({
+    const organic = parsed.data.organic ?? [];
+    if (organic.length === 0) {
+      console.warn("Serper returned no organic results for query");
+    }
+
+    const results = organic.map((result) => ({
       name: result.title,
       url: result.link,
     }));

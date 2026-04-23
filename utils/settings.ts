@@ -25,11 +25,52 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 let runtimeSettings: AppSettings | null = null;
 
+/** True when the client sent a redacted/empty value (e.g. GET /api/settings returns ***). */
+function isPlaceholderApiKey(value: string | undefined): boolean {
+  if (value == null) return true;
+  const t = value.trim();
+  if (t === "") return true;
+  if (t === "***") return true;
+  return /^[\s*]+$/.test(t);
+}
+
+/**
+ * When the browser sends `X-StudyBuddy-Settings` with masked keys from GET /api/settings,
+ * we must not use "***" as the real key — fall back to server env vars.
+ */
+function applyEnvSecretsToRuntime(s: AppSettings): AppSettings {
+  return {
+    ...s,
+    llmApiKey: isPlaceholderApiKey(s.llmApiKey)
+      ? getProviderApiKey(s.llmProvider)
+      : s.llmApiKey,
+    searchApiKey: isPlaceholderApiKey(s.searchApiKey)
+      ? getSearchApiKeyForEngine(s.searchEngine)
+      : s.searchApiKey,
+  };
+}
+
+function getSearchApiKeyForEngine(searchEngine: string): string {
+  const engine = (searchEngine || DEFAULT_SETTINGS.searchEngine).toLowerCase();
+  switch (engine) {
+    case "serper":
+      return process.env.SERPER_API_KEY || "";
+    case "bing":
+      return process.env.BING_API_KEY || "";
+    case "brave":
+      return process.env.BRAVE_API_KEY || "";
+    case "duckduckgo":
+      return "";
+    default:
+      return "";
+  }
+}
+
 export function getSettings(): AppSettings {
   // Return runtime settings if available (from frontend)
   if (runtimeSettings) {
-    console.log('Using runtime settings:', runtimeSettings.llmProvider);
-    return runtimeSettings;
+    console.log("Using runtime settings:", runtimeSettings.llmProvider);
+    return applyEnvSecretsToRuntime(runtimeSettings);
   }
 
   console.log('No runtime settings, using environment variables');
@@ -47,7 +88,9 @@ export function getSettings(): AppSettings {
     llmBaseUrl: getProviderBaseUrl(provider),
     llmModel: getProviderModel(provider),
     searchEngine: process.env.SEARCH_ENGINE || DEFAULT_SETTINGS.searchEngine,
-    searchApiKey: getSearchApiKey(),
+    searchApiKey: getSearchApiKeyForEngine(
+      process.env.SEARCH_ENGINE || DEFAULT_SETTINGS.searchEngine,
+    ),
     searchUrl: process.env.SEARXNG_URL || DEFAULT_SETTINGS.searchUrl,
     defaultEducationLevel: process.env.DEFAULT_EDUCATION_LEVEL || DEFAULT_SETTINGS.defaultEducationLevel,
   };
@@ -82,7 +125,9 @@ function getProviderApiKey(provider: string): string {
 function getProviderBaseUrl(provider: string): string {
   switch (provider.toLowerCase()) {
     case "ollama": return process.env.OLLAMA_BASE_URL || DEFAULT_SETTINGS.llmBaseUrl;
-    case "openai": return process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+    case "openai":
+      // OpenAIProvider appends `/v1/chat/completions`; base must not include `/v1`
+      return process.env.OPENAI_BASE_URL || "https://api.openai.com";
     case "anthropic":
     case "claude": return process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com";
     case "google":
@@ -103,17 +148,6 @@ function getProviderModel(provider: string): string {
     case "gemini": return process.env.GOOGLE_MODEL || "gemini-1.5-flash";
     case "groq": return process.env.GROQ_MODEL || "llama-3.1-8b-instant";
     case "together": return process.env.TOGETHER_MODEL || "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo";
-    default: return "";
-  }
-}
-
-function getSearchApiKey(): string {
-  const searchEngine = process.env.SEARCH_ENGINE || DEFAULT_SETTINGS.searchEngine;
-  switch (searchEngine.toLowerCase()) {
-    case "serper": return process.env.SERPER_API_KEY || "";
-    case "bing": return process.env.BING_API_KEY || "";
-    case "brave": return process.env.BRAVE_API_KEY || "";
-    case "duckduckgo": return ""; // DuckDuckGo doesn't need an API key
     default: return "";
   }
 }

@@ -30,15 +30,21 @@ export default function InitializeSettings() {
         if (settingsToApply) {
           console.log('Auto-initializing backend with settings...');
           
+          // Do not persist masked API keys from GET /api/settings — they would be sent
+          // back in X-StudyBuddy-Settings and would override real Vercel env keys.
+          const toStore = { ...settingsToApply } as Record<string, unknown>;
+          if (toStore.llmApiKey === "***") delete toStore.llmApiKey;
+          if (toStore.searchApiKey === "***") delete toStore.searchApiKey;
+          
           // Save to localStorage for frontend components to use
-          localStorage.setItem('studybuddy-settings', JSON.stringify(settingsToApply));
+          localStorage.setItem('studybuddy-settings', JSON.stringify(toStore));
           console.log('✓ Settings saved to localStorage for frontend use');
           
           // Apply these settings to the backend immediately
-          const response = await fetch('/api/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(settingsToApply),
+          const response = await fetch("/api/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(toStore),
           });
           
           if (response.ok) {
